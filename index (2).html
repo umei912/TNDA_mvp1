@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="dark" data-view="0">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>觀景窗 VIEWFINDER — 台灣當代美術館沉浸式探索與靈感採集平台</title>
+<meta name="description" content="台灣當代美術館沉浸式探索與靈感採集平台">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+TC:wght@400;600;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --wo:.24;--bg:#1b2232;--fg:#f4f1ea;--line:rgba(244,241,234,.24);
+  --red:#ff5030;
+  --serif:"Noto Serif TC","Cormorant Garamond","Songti TC","PMingLiU",serif;
+  --sc:"Cormorant Garamond","Noto Serif TC",serif;
+  --mono:"IBM Plex Mono","Menlo","Consolas",monospace;
+  --mx:50vw;--my:50vh;
+}
+html[data-theme=paper]{--wo:.22;--bg:#eeebe3;--fg:#15171c;--line:rgba(21,23,28,.3)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{transition:background-color .45s ease;background:var(--bg);color:var(--fg);font-family:var(--serif);cursor:crosshair;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+select{font:inherit;color:inherit}
+.mono{font-family:var(--mono);font-size:11px;letter-spacing:.06em}
+.sc{font-family:var(--sc);font-variant:small-caps;letter-spacing:.28em;text-transform:lowercase}
+.dim{opacity:.6}
+
+/* ---------- layers ---------- */
+.wash{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;opacity:var(--wo);transition:opacity 1.2s ease}
+.wg{position:absolute;inset:0;opacity:0;transition:opacity 1.1s ease}
+.wg.on{opacity:1}
+.wg:not(.on) i{animation-play-state:paused!important}
+.wash i{position:absolute;width:80vmax;height:80vmax;border-radius:50%;background:radial-gradient(circle,var(--k) 0,transparent 68%);will-change:transform}
+.wash i:nth-child(1){left:-30vmax;top:-34vmax;animation:dr1 40s ease-in-out infinite alternate}
+.wash i:nth-child(2){right:-34vmax;bottom:-38vmax;animation:dr2 46s ease-in-out infinite alternate}
+.wash i:nth-child(3){left:24vw;top:22vh;width:60vmax;height:60vmax;animation:dr3 34s ease-in-out infinite alternate}
+
+@keyframes dr1{to{transform:translate(18vw,14vh) scale(1.2)}}
+@keyframes dr2{to{transform:translate(-16vw,-10vh) scale(.9)}}
+@keyframes dr3{to{transform:translate(-20vw,12vh) scale(1.25)}}
+.grain{position:fixed;inset:0;z-index:60;pointer-events:none;opacity:.11;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");}
+@keyframes gr{0%{transform:translate(0,0)}20%{transform:translate(-18px,10px)}40%{transform:translate(12px,-22px)}60%{transform:translate(-8px,-12px)}80%{transform:translate(20px,16px)}100%{transform:translate(0,0)}}
+.vf{position:fixed;inset:72px 20px 20px 20px;z-index:45;pointer-events:none}
+.vf b{position:absolute;width:22px;height:22px;border:0 solid var(--fg);opacity:.7}
+.vf b:nth-child(1){left:0;top:0;border-width:1px 0 0 1px}.vf b:nth-child(2){right:0;top:0;border-width:1px 1px 0 0}
+.vf b:nth-child(3){left:0;bottom:0;border-width:0 0 1px 1px}.vf b:nth-child(4){right:0;bottom:0;border-width:0 1px 1px 0}
+.hud{position:fixed;left:32px;bottom:28px;z-index:46;pointer-events:none;opacity:.75}
+.hud .r{color:var(--red)}
+.hud-r{position:fixed;right:32px;bottom:28px;z-index:46;pointer-events:none;opacity:.75;text-align:right}
+
+/* ---------- top bar ---------- */
+.top{position:fixed;left:0;right:0;top:0;height:56px;z-index:55;display:grid;grid-template-columns:auto 1fr auto;align-items:center;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--bg) 94%,transparent)}
+.logo{padding:0 22px;display:flex;align-items:baseline;gap:12px;border-right:1px solid var(--line);height:100%;align-items:center}
+.logo strong{font-weight:900;font-size:22px;letter-spacing:.18em}
+.logo span{font-size:12px}
+.nav{display:flex;height:100%;overflow-x:auto;scrollbar-width:none}
+.nav button{padding:0 18px;height:100%;border-right:1px solid var(--line);display:flex;align-items:center;gap:9px;white-space:nowrap;opacity:.62;transition:opacity .3s,background .3s;font-size:14px;letter-spacing:.12em}
+.nav button em{font-family:var(--sc);font-style:italic;font-size:15px}
+.nav button:hover{opacity:.9}
+.nav button.on{opacity:1;background:color-mix(in srgb,var(--fg) 9%,transparent)}
+.nav button.on::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--red)}
+.bagbtn{padding:0 22px;height:100%;border-left:1px solid var(--line);display:flex;gap:10px;align-items:center;font-size:14px;letter-spacing:.14em}
+.bagbtn b{font-family:var(--mono);font-weight:500;font-size:12px;border:1px solid var(--fg);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+/* ---------- views / iris ---------- */
+.stage{position:fixed;top:56px;left:0;right:0;bottom:0;z-index:5}
+.view{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;visibility:hidden;opacity:0;transform:translateY(14px);transition:opacity .4s ease,transform .4s ease,visibility 0s .4s;scrollbar-width:thin}
+.view.on{visibility:visible;opacity:1;transform:none;z-index:3;transition:opacity .45s ease,transform .45s ease,visibility 0s}
+.view:not(.on):not(.leaving) :is(.spinwrap,.wave i,.halo){animation-play-state:paused}
+body.trans :is(.wash i,.spinwrap,.wave i,.halo){animation-play-state:paused!important}
+.view.leaving{visibility:visible;z-index:2}
+.pad{padding:44px 56px 90px;min-height:100%}
+.curtain{position:fixed;top:0;bottom:0;width:51%;z-index:58;pointer-events:none;background:
+ repeating-linear-gradient(90deg,#0f1320 0 38px,#1a2133 38px 52px,#0f1320 52px 90px);transition:transform 1.3s cubic-bezier(.7,0,.25,1)}
+.curtain.l{left:0;transform:translateX(-101%);border-right:1px solid #3a4560}
+.curtain.r{right:0;transform:translateX(101%);border-left:1px solid #3a4560}
+.curtain.closed{transform:none;transition-duration:.55s}
+
+.h-chap{display:flex;gap:22px;align-items:flex-end;border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:28px}
+.h-chap .num{font-family:var(--sc);font-style:italic;font-size:78px;line-height:.8}
+.h-chap h2{font-weight:900;font-size:clamp(34px,4.6vw,64px);letter-spacing:.1em;line-height:1}
+.h-chap p{max-width:420px;font-size:13px;line-height:1.9;opacity:.75;margin-left:auto}
+
+/* ---------- ch1 landing ---------- */
+#v0{background:transparent}
+.rings{position:absolute;right:-16vmin;top:50%;width:118vmin;height:118vmin;transform:translateY(-50%)}
+.rings svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.rings .spinwrap,.rings .stat{position:absolute;inset:0}
+.spinwrap{animation:spin 260s linear infinite;will-change:transform}
+.spin{pointer-events:none;will-change:transform;animation:spin 260s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rn{cursor:pointer}
+.rn circle{transition:r .3s,fill .3s}
+.rn:hover circle{fill:var(--red)}
+.rn text{fill:#111;font-family:var(--mono);font-size:12px}
+.rn:hover text{fill:#fff}
+.hid{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lens{position:absolute;left:0;top:0;width:380px;height:380px;border-radius:50%;overflow:hidden;will-change:transform;-webkit-mask-image:radial-gradient(closest-side,#000 0,rgba(0,0,0,.6) 55%,transparent 100%);mask-image:radial-gradient(closest-side,#000 0,rgba(0,0,0,.6) 55%,transparent 100%)}
+.lin{position:absolute;left:0;top:0;width:100vw;height:calc(100vh - 56px);will-change:transform}
+.hid span{position:absolute;font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:#f1efe6;white-space:nowrap}
+.hid svg{position:absolute;inset:0;width:100%;height:100%}
+.l-title{position:absolute;left:56px;bottom:96px;z-index:4;max-width:60vw}
+.l-title .tag{margin-bottom:14px;font-size:13px;letter-spacing:.3em;opacity:.8}
+.l-title h1{font-weight:900;font-size:clamp(88px,15vw,230px);line-height:.95;letter-spacing:.06em;color:#e9e6dc}
+.l-title .en{font-family:var(--sc);font-size:clamp(18px,2vw,30px);letter-spacing:.6em;margin:8px 0 26px;opacity:.85;font-variant:small-caps}
+.enter{position:relative;border:1px solid var(--fg);padding:15px 30px;font-size:16px;letter-spacing:.35em;display:inline-flex;gap:16px;align-items:center;transition:background .4s,color .4s}
+.enter::after{content:"";width:46px;height:1px;background:currentColor;transition:width .4s}
+.enter:hover{background:var(--red);border-color:var(--red);color:#fff}.enter:hover::after{width:70px}
+.l-side{position:absolute;left:56px;top:40px;display:grid;gap:7px;z-index:4;opacity:.8}
+.wave{position:absolute;left:56px;right:56px;bottom:40px;height:34px;z-index:4;display:flex;align-items:center;gap:2px;opacity:.8}
+.wave i{flex:1;background:var(--fg);height:100%;transform:scaleY(var(--h,.3));transform-origin:center;animation:wv 2.4s ease-in-out infinite alternate;animation-delay:var(--d);opacity:.75}
+@keyframes wv{to{transform:scaleY(calc(var(--h) * .25 + .05))}}
+.fragments .f{position:absolute;background:#7a7a76;overflow:hidden;filter:grayscale(1) contrast(1.4)}
+.f{background-image:radial-gradient(#111 28%,transparent 30%);background-size:5px 5px}
+
+/* ---------- ch2 palette ---------- */
+.s2,.s3,.s4,.s6{background:color-mix(in srgb,var(--bg) 90%,transparent)}
+.s2{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:0;border:1px solid var(--line)}
+.s2>div{padding:30px}
+.s2>div+div{border-left:1px solid var(--line)}
+.discs{display:flex;flex-wrap:wrap;gap:66px 34px;padding:6px 0 44px}
+.disc{position:relative;width:118px;height:118px;border-radius:50%;background:var(--k);transition:transform .5s cubic-bezier(.2,.8,.2,1),box-shadow .4s}
+.disc:nth-child(2n){translate:0 14px}.disc:nth-child(3n){translate:0 -6px}
+.disc::after{content:"";position:absolute;inset:0;border-radius:50%;background-image:radial-gradient(rgba(0,0,0,.55) 26%,transparent 29%);background-size:6px 6px;opacity:.55;-webkit-mask-image:linear-gradient(120deg,transparent 20%,#000 90%);mask-image:linear-gradient(120deg,transparent 20%,#000 90%)}
+.disc:hover{transform:scale(1.08)}
+.disc.sel{box-shadow:0 0 0 5px var(--bg),0 0 0 7px var(--red)}
+.disc .n{position:absolute;right:-6px;top:-10px;z-index:2;display:none;width:34px;height:34px;border-radius:50%;background:#efede6;color:#111;font-family:var(--sc);font-style:italic;font-weight:600;font-size:20px;place-items:center;text-decoration:underline}
+.disc.sel .n{display:grid}
+.disc .lb{z-index:3;position:absolute;z-index:3;left:50%;bottom:-30px;transform:translateX(-50%);white-space:nowrap;font-size:12px;letter-spacing:.2em}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:62px}
+.chip{border:1px solid var(--line);padding:9px 16px;font-size:13px;letter-spacing:.18em;transition:all .3s}
+.chip:hover{border-color:var(--fg)}
+.chip.sel{background:var(--red);color:#fff;border-color:var(--red)}
+.pick-hint{margin:6px 0 22px;font-size:13px;line-height:1.9;opacity:.75;max-width:460px}
+.res{display:grid;gap:0}
+.rrow{position:relative;padding:18px 0 18px 26px;border-bottom:1px solid var(--line)}
+.rrow::before{content:"";position:absolute;left:0;top:18px;bottom:18px;width:7px;background:var(--fg)}
+.rrow .bar{position:absolute;left:0;top:18px;width:7px;background:var(--red);height:calc((100% - 36px) * var(--p));transition:height 1s}
+.rrow h4{font-weight:900;font-size:22px;letter-spacing:.14em}
+.rrow h4 small{font-family:var(--sc);font-weight:500;font-size:15px;letter-spacing:.3em;margin-left:10px;opacity:.7}
+.rrow .meta{margin:6px 0 10px;opacity:.75}
+.rrow .btns{display:flex;gap:10px;flex-wrap:wrap}
+.mini{border:1px solid var(--line);padding:6px 12px;font-size:12px;letter-spacing:.16em;transition:.3s}
+.mini:hover{background:var(--red);border-color:var(--red);color:#fff}
+.sw4{display:flex;gap:4px;margin-top:8px}.sw4 i{width:22px;height:22px;display:block;border:1px solid var(--line)}
+.pct{position:absolute;right:0;top:18px;font-family:var(--sc);font-style:italic;font-size:34px}
+.pct small{font-family:var(--mono);font-size:11px;font-style:normal}
+
+/* ---------- ch3 map ---------- */
+.s3{display:grid;grid-template-columns:minmax(300px,.9fr) minmax(0,1fr);border:1px solid var(--line);min-height:calc(100vh - 230px)}
+.mapbox{position:relative;border-right:1px solid var(--line);display:grid;place-items:center;padding:10px;overflow:hidden}
+.mapbox svg{width:100%;max-height:calc(100vh - 210px);overflow:visible}
+.gl{stroke:var(--fg);stroke-opacity:.14;stroke-width:.6;fill:none}
+.coast{fill:color-mix(in srgb,var(--fg) 7%,transparent);stroke:var(--fg);stroke-width:1.1}
+.ctr{fill:none;stroke:var(--fg);stroke-opacity:.25;stroke-width:.7;stroke-dasharray:2 3}
+.node{cursor:pointer}
+.node .core{fill:var(--fg);transition:fill .3s}
+.node .halo{fill:none;stroke:var(--fg);stroke-width:1;transform-box:fill-box;transform-origin:center;animation:br 3.2s ease-in-out infinite}
+.node:nth-child(2n) .halo{animation-delay:-1.4s}
+.node.lit .core{fill:var(--red)}.node.lit .halo{stroke:var(--red)}
+.node.dark .core{opacity:.35}
+@keyframes br{0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(2.6);opacity:0}}
+.node text{font-family:var(--mono);font-size:10px;fill:var(--fg);letter-spacing:.06em}
+.node text.zh{font-family:var(--serif);font-size:12px;letter-spacing:.14em}
+.rt{fill:none;stroke:var(--red);stroke-width:1.4;stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 1.6s cubic-bezier(.6,0,.2,1)}
+.rt.go{stroke-dashoffset:0}
+.rtl{font-family:var(--mono);font-size:8.5px;fill:var(--fg);opacity:0;transition:opacity .8s 1s}
+.rtl.go{opacity:1}
+.ripple{fill:none;stroke:var(--red);stroke-width:1.2}
+.ctrl{padding:26px 30px;display:flex;flex-direction:column;gap:22px}
+.ctrl h5{font-weight:600;font-size:13px;letter-spacing:.3em;margin-bottom:10px;display:flex;gap:10px;align-items:center}
+.ctrl h5::after{content:"";flex:1;height:1px;background:var(--line)}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+select{background:transparent;border:1px solid var(--line);padding:8px 12px;font-size:13px;letter-spacing:.12em}
+select option{color:#111}
+.legs{display:grid;gap:0;border-top:1px solid var(--line)}
+.leg{padding:12px 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:54px 1fr;gap:10px;font-size:13px;line-height:1.7}
+.leg .mono{opacity:.8}
+.tip{position:absolute;z-index:5;pointer-events:none;width:210px;border:1px solid var(--line);background:color-mix(in srgb,var(--bg) 88%,transparent);padding:10px;opacity:0;transition:opacity .3s}
+.tip.on{opacity:1}
+.tip svg{width:100%;height:auto;max-height:none;margin-bottom:6px}
+.tip b{font-weight:900;letter-spacing:.14em;font-size:15px;display:block}
+
+/* ---------- ch4 dossier ---------- */
+.s4{display:grid;grid-template-columns:230px minmax(0,1fr);border:1px solid var(--line)}
+.idx{border-right:1px solid var(--line)}
+.idx button{display:block;width:100%;text-align:left;padding:16px 18px;border-bottom:1px solid var(--line);position:relative;transition:background .3s}
+.idx button:hover{background:color-mix(in srgb,var(--fg) 7%,transparent)}
+.idx button.on{background:color-mix(in srgb,var(--fg) 12%,transparent)}
+.idx button.on::before{content:"";position:absolute;left:0;top:0;bottom:0;width:7px;background:var(--fg)}
+.idx .mono{opacity:.6;display:block;margin-bottom:5px}
+.idx strong{font-size:18px;letter-spacing:.14em;font-weight:900}
+.idx .sc{display:block;font-size:13px;opacity:.65;margin-top:3px}
+.dos{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(250px,.9fr)}
+.canvas4{position:relative;min-height:540px;border-right:1px solid var(--line);overflow:hidden}
+.back{position:absolute;inset:0;display:grid;place-items:center;opacity:.35}
+.back svg{width:92%;height:auto}
+.poster{position:absolute;right:7%;top:9%;width:58%;max-width:400px;aspect-ratio:3/4;z-index:1;background:var(--p1);color:#f2efe6;box-shadow:0 28px 60px rgba(0,0,0,.4);padding:20px;overflow:hidden;transition:transform .8s cubic-bezier(.2,.8,.2,1)}
+.canvas4:hover .poster{transform:translate(-10px,-8px) rotate(-.6deg)}
+.poster::before{content:"";position:absolute;width:78%;aspect-ratio:1;border-radius:50%;left:-14%;bottom:-20%;background:var(--p3);opacity:.95}
+.poster::after{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(0,0,0,.5) 22%,transparent 26%);background-size:5px 5px;opacity:.45;-webkit-mask-image:linear-gradient(200deg,transparent 10%,#000 85%);mask-image:linear-gradient(200deg,transparent 10%,#000 85%)}
+.poster .dot{position:absolute;right:16px;top:16px;width:46px;height:46px;border-radius:50%;background:#efede6;color:#111;display:grid;place-items:center;font-family:var(--sc);font-style:italic;font-weight:600;font-size:22px;z-index:2}
+.poster h3{position:relative;z-index:2;writing-mode:vertical-rl;font-weight:900;font-size:clamp(26px,3.2vw,44px);letter-spacing:.18em;line-height:1.2;margin-top:6px}
+.poster .q{position:absolute;z-index:2;left:20px;right:20px;bottom:18px;font-size:13px;line-height:1.9;border-top:1px solid rgba(255,255,255,.5);padding-top:10px}
+.poster .p{position:absolute;z-index:2;left:20px;top:20px;width:30%}
+.bg-name{position:absolute;left:24px;bottom:16px;font-weight:900;font-size:clamp(46px,7vw,100px);letter-spacing:.08em;line-height:1;opacity:.13;color:var(--fg);z-index:0;pointer-events:none}
+.hidnote{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .5s;-webkit-mask-image:radial-gradient(circle 150px at var(--sx,50%) var(--sy,50%),#000 0,rgba(0,0,0,.7) 50%,transparent 100%);mask-image:radial-gradient(circle 150px at var(--sx,50%) var(--sy,50%),#000 0,rgba(0,0,0,.7) 50%,transparent 100%);z-index:6}
+.hidnote span{position:absolute;max-width:190px;font-family:var(--mono);font-size:11px;line-height:1.7;color:#fff;border-left:1px solid var(--red);padding-left:8px}
+.dim-ov{position:absolute;inset:0;z-index:5;pointer-events:none;opacity:0;transition:opacity .6s;background:radial-gradient(circle 170px at var(--sx,50%) var(--sy,50%),rgba(8,8,10,0) 0,rgba(8,8,10,.35) 55%,rgba(8,8,10,.96) 100%)}
+.canvas4.xray .dim-ov,.canvas4.xray .hidnote{opacity:1}
+.canvas4.xray .back{opacity:.9}
+.info{padding:24px 24px 28px;display:flex;flex-direction:column;gap:18px}
+.info h3{font-weight:900;font-size:26px;letter-spacing:.14em;line-height:1.3}
+.info .coord{line-height:1.9}
+.swatches{display:grid;grid-template-columns:repeat(2,1fr);gap:0;border:1px solid var(--line)}
+.swatch{position:relative;height:96px;background:var(--k);display:flex;flex-direction:column;justify-content:flex-end;padding:8px 10px;text-align:left;transition:transform .35s;color:var(--t)}
+.swatch:last-child:nth-child(odd){grid-column:span 2}
+.swatch:hover{transform:scale(1.04);z-index:2}
+.swatch b{font-weight:600;font-size:13px;letter-spacing:.2em}
+.swatch .mono{font-size:11px}
+.swatch::after{content:"HEX";position:absolute;right:8px;top:6px;font-family:var(--mono);font-size:9px;opacity:.6;letter-spacing:.2em}
+.acts{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:1px solid var(--fg);padding:10px 16px;font-size:13px;letter-spacing:.18em;transition:.3s}
+.btn:hover,.btn.on{background:var(--red);border-color:var(--red);color:#fff}
+.btn.red{border-color:var(--red);color:var(--red)}.btn.red:hover{background:var(--red);color:#fff}
+.cards4{display:grid;grid-template-columns:repeat(2,1fr);border-top:1px solid var(--line)}
+.film{position:relative;padding:26px 18px;border-right:1px solid var(--line);background:color-mix(in srgb,var(--fg) 5%,transparent)}
+.film::before,.film::after{content:"";position:absolute;left:0;right:0;height:10px;background:repeating-linear-gradient(90deg,transparent 0 8px,var(--fg) 8px 16px,transparent 16px 24px);opacity:.2;-webkit-mask-image:linear-gradient(#000,#000);}
+.film::before{top:7px}.film::after{bottom:7px}
+.film p{font-size:13px;line-height:1.9}
+
+/* ---------- ch5 oracle ---------- */
+.s5{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,520px) minmax(0,1fr);align-items:center;gap:30px;min-height:calc(100vh - 240px)}
+.s5 .side{font-size:13px;line-height:2;opacity:.8}
+.cardwrap{position:relative;aspect-ratio:520/720;max-height:calc(100vh - 220px);margin:0 auto;width:100%;border:1px solid var(--line);overflow:hidden;user-select:none;touch-action:none}
+#oc{width:100%;height:100%;display:block}
+.prog{position:absolute;left:0;bottom:0;height:5px;width:calc(var(--pg,0) * 100%);background:var(--red);z-index:3}
+.holdhint{position:absolute;left:0;right:0;bottom:18px;text-align:center;z-index:3;font-size:13px;letter-spacing:.35em;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.8)}
+.flash{position:absolute;inset:0;background:#fff;opacity:0;z-index:4;pointer-events:none}
+.flash.go{animation:fl 1.3s ease-out}
+@keyframes fl{0%{opacity:0}12%{opacity:1}100%{opacity:0}}
+.rev{position:absolute;inset:0;z-index:2;padding:26px 24px;display:flex;flex-direction:column;background:var(--rbg,#222);color:#f1efe6;opacity:0;visibility:hidden;transition:opacity .9s,filter 1.2s;filter:blur(14px) contrast(1.5)}
+.rev.on{opacity:1;visibility:visible;filter:none}
+.rev::after{content:"";position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(rgba(0,0,0,.5) 22%,transparent 26%);background-size:5px 5px;opacity:.3}
+.rev>*{position:relative;z-index:2}
+.rev h3{font-weight:900;font-size:34px;letter-spacing:.14em;margin:14px 0 4px}
+.rev .ex{font-size:20px;letter-spacing:.14em;border-bottom:1px solid rgba(255,255,255,.4);padding-bottom:14px}
+.rev .qq{margin-top:auto;font-size:22px;line-height:1.8;letter-spacing:.1em;font-weight:600}
+.rev .when{margin:14px 0}
+.rev .acts{margin-top:10px}.rev .btn{border-color:#f1efe6;color:#f1efe6}.rev .btn:hover{background:#f1efe6;color:#111}
+
+/* ---------- ch6 bag ---------- */
+.s6{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,440px);border:1px solid var(--line)}
+.bag{padding:26px 28px;border-right:1px solid var(--line)}
+.bagrow{display:grid;grid-template-columns:44px 1fr auto;gap:14px;align-items:center;padding:16px 0;border-bottom:1px solid var(--line)}
+.bagrow h4{font-weight:900;font-size:19px;letter-spacing:.12em}
+.empty{padding:40px 0;opacity:.7;line-height:2;font-size:14px}
+.tkt{padding:26px;display:flex;flex-direction:column;align-items:center;gap:16px}
+#tc{width:100%;max-width:340px;height:auto;box-shadow:0 20px 50px rgba(0,0,0,.35);background:#ddd}
+.toast{position:fixed;left:50%;bottom:70px;transform:translate(-50%,20px);z-index:70;background:var(--fg);color:var(--bg);padding:10px 18px;font-family:var(--mono);font-size:12px;letter-spacing:.1em;opacity:0;transition:.4s;pointer-events:none}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+html:not([data-view="2"]) .halo{animation-play-state:paused}
+@media (max-width:900px){
+  .pad{padding:28px 18px 90px}.s2,.s3,.s4,.dos,.s5,.s6{grid-template-columns:1fr}
+  .s2>div+div,.mapbox,.idx,.canvas4,.bag{border:0;border-bottom:1px solid var(--line)}
+  .logo span{display:none}.l-title{left:20px;bottom:90px;max-width:92vw}.l-side{display:none}.wave{left:20px;right:20px}
+  .h-chap{flex-wrap:wrap}.h-chap p{margin-left:0}.hud,.hud-r{display:none}.rings{opacity:.5}
+  .idx{display:grid;grid-template-columns:repeat(2,1fr)}
+}
+@media (prefers-reduced-motion:reduce){.grain,.spin,.wash i,.wave i{animation:none}}
+</style>
+</head>
+<body>
+
+<div class="wash"><div class="wg on"><i></i><i></i><i></i></div><div class="wg"><i></i><i></i><i></i></div></div>
+<div class="grain"></div>
+<div class="vf"><b></b><b></b><b></b><b></b></div>
+<div class="hud mono">N <span id="hlat">23.4768</span>° · E <span id="hlon">120.4408</span>° <span class="r">●</span> REC</div>
+<div class="hud-r mono" id="hchap">CH.01 / 06</div>
+
+<header class="top">
+  <div class="logo"><strong>觀景窗</strong><span class="sc">Viewfinder</span></div>
+  <nav class="nav" id="nav"></nav>
+  <button class="bagbtn" id="bagbtn">行囊 <b id="bagn">0</b></button>
+</header>
+
+<main class="stage" id="stage">
+
+<!-- 01 閾值 -->
+<section class="view on" id="v0" data-theme="dark">
+  <div class="rings" id="rings"></div>
+  <div class="hid" data-spot id="hid0"></div>
+  <div class="l-side mono"><span>— 台灣當代美術館</span><span>— 沉浸式探索與靈感採集平台</span><span class="dim">滑鼠即手電筒，請在暗室裡尋找隱藏的註記</span></div>
+  <div class="l-title">
+    <p class="tag sc">Chapter I — Threshold</p>
+    <h1>觀景窗</h1>
+    <p class="en">Viewfinder</p>
+    <button class="enter" id="enter">進入暗室 · 開始探索</button>
+  </div>
+  <div class="wave" id="wave"></div>
+</section>
+
+<!-- 02 感官共振 -->
+<section class="view" id="v1" data-theme="paper">
+  <div class="pad">
+    <div class="h-chap"><span class="num">II</span><h2>感官共振</h2><p>不必先決定想看什麼。憑直覺點選 1 至 3 種吸引你的顏色或空間材質，背景會隨之暈染，系統再配對氛圍相近的美術館。</p></div>
+    <div class="s2">
+      <div>
+        <h5 class="mono" style="margin-bottom:22px;opacity:.7">01 / 色票　COLOR — 最多 3 項</h5>
+        <div class="discs" id="discs"></div>
+        <h5 class="mono" style="margin-top:56px;opacity:.7">02 / 材質與氛圍　MATERIAL</h5>
+        <div class="chips" id="chips" style="margin-top:14px"></div>
+      </div>
+      <div>
+        <p class="pick-hint mono" id="pickhint">尚未選取。請先點一顆色票或一個材質標籤。</p>
+        <div class="res" id="res"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 空間星象 -->
+<section class="view" id="v2" data-theme="dark">
+  <div class="pad">
+    <div class="h-chap"><span class="num">III</span><h2>空間星象</h2><p>六座美術館依真實經緯度化為會呼吸的光點。選擇主題路徑或區域，光纖會把它們串起；或指定你的位置，讓雷達掃出最近的一場靈感之旅。</p></div>
+    <div class="s3">
+      <div class="mapbox" id="mapbox"><div class="tip" id="tip"></div></div>
+      <div class="ctrl">
+        <div><h5>主題路徑　THEME</h5><div class="row" id="themes"></div></div>
+        <div><h5>週末一日路線　REGION</h5><div class="row" id="regions"></div></div>
+        <div><h5>距離我最近的靈感　RADAR</h5>
+          <div class="row"><select id="city"></select><button class="mini" id="geo">使用瀏覽器定位</button></div></div>
+        <div><h5>移動節點　TRANSIT</h5><div class="legs" id="legs"><p class="mono dim" style="padding:12px 0">選擇路徑後，節點之間的交通方式與移動時間會顯示於此。</p></div>
+        <p class="mono dim" style="margin-top:10px;font-size:10px">※ 交通時間為示意，請以實際班次與官方公告為準。</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 場域檔案 -->
+<section class="view" id="v3" data-theme="paper">
+  <div class="pad">
+    <div class="h-chap"><span class="num">IV</span><h2>場域檔案</h2><p>前景是當期展覽的視覺，後景是場館的建築線稿。點擊色票複製 HEX；開啟「空間透視」進入暗室，用手電筒照出建築裡的隱藏註記。</p></div>
+    <div class="s4">
+      <div class="idx" id="idx"></div>
+      <div>
+        <div class="dos">
+          <div class="canvas4" id="c4" data-spot>
+            <div class="back" id="back"></div>
+            <div class="poster" id="poster"></div>
+            <div class="bg-name" id="bgname"></div>
+            <div class="dim-ov"></div>
+            <div class="hidnote" id="hidnote"></div>
+          </div>
+          <div class="info" id="info"></div>
+        </div>
+        <div class="cards4" id="cards4"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 籤詩 -->
+<section class="view" id="v4" data-theme="dark">
+  <div class="pad">
+    <div class="h-chap"><span class="num">V</span><h2>策展籤詩</h2><p>選擇困難的時候，交給命運。長按畫面中央的卡牌，底片將過曝、翻出一場意想不到的展覽、建議的觀展時間，以及一句策展引言。</p></div>
+    <div class="s5">
+      <div class="side mono">
+        <p>— 今日靈感盲盒</p><p>— 長按 1.1 秒（或按下「抽籤」）</p><p class="dim">卡牌上的圖形每 1.4 秒換一組館色，<br>停在你放手的那一刻。</p>
+      </div>
+      <div class="cardwrap" id="cw">
+        <canvas id="oc" width="520" height="720"></canvas>
+        <div class="rev" id="rev"></div>
+        <div class="flash" id="flash"></div>
+        <div class="holdhint" id="hold">長按 · 抽出今日的展覽</div>
+        <div class="prog" id="prog"></div>
+      </div>
+      <div class="side"><button class="btn" id="draw">抽籤</button><p class="mono dim" style="margin-top:18px" id="oinfo">NO. —</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 行囊 -->
+<section class="view" id="v5" data-theme="paper">
+  <div class="pad">
+    <div class="h-chap"><span class="num">VI</span><h2>觀展行囊</h2><p>把心儀的展覽收進行囊，系統會即時生成一張專屬的「數位觀展門票」，包含展覽、心情色票、引言與交通指引，可下載為圖片分享。</p></div>
+    <div class="s6">
+      <div class="bag"><div id="baglist"></div></div>
+      <div class="tkt">
+        <canvas id="tc" width="540" height="810"></canvas>
+        <div class="acts"><button class="btn red" id="dl">下載觀展門票 PNG</button><button class="btn" id="clr">清空行囊</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<div class="curtain l" id="cl"></div><div class="curtain r" id="cr"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   資料（示意）：六館色票、座標、標籤。
+   嘉美館／北美館色票取自對話資料；其餘館別與展覽文字為示意，
+   請依雲端資料夾內容在此區替換。
+   ========================================================= */
+const MUSEUMS=[
+ {id:'cyam',en:'CYAM',name:'嘉義市立美術館',short:'嘉美館',city:'嘉義',lat:23.476819,lon:120.440880,
+  addr:'嘉義市西區廣寧街101號',hours:'週二至週日 09:00–17:00；週一休館',ticket:'請依當期展覽與官方售票公告',site:'https://chiayiartmuseum.chiayi.gov.tw/',
+  colors:[['磚紅','#A65F4B'],['木質棕','#806B55'],['苔灰綠','#9BA58A'],['檔案米','#E9E2D5']],
+  tags:['歷史檔案','古蹟再生','風土','建築光影'],arch:'timber',
+  ex:{t:'觀物視野',full:'觀物視野－從物產至風景的生成',p:'2026/11/20–2027/03/07',q:'土地收藏著時間，也收藏每個人的生活。',when:'週二至週日 09:00–17:00，週一休館',
+   sum:'以嘉義地方美術史與風土文化為起點，從物產、農業、畜牧及地方產業切入，探討藝術創作與環境變遷、勞動經驗的連結。'},
+  notes:[[8,22,'1936 年古蹟棟與 1954 年酒類倉庫的木構接點'],[48,56,'場館由不同年代的歷史建築構成'],[14,78,'嘉義市轉運中心步行約 5–7 分鐘']],
+  go:'臺鐵嘉義車站 → 步行約 4–6 分鐘 → 嘉美館'},
+ {id:'tfam',en:'TFAM',name:'臺北市立美術館',short:'北美館',city:'臺北',lat:25.072411,lon:121.524810,
+  addr:'臺北市中山區中山北路三段181號',hours:'週二至週五 09:30–17:30；週六 09:30–20:30；週日 09:30–17:30；週一休館',ticket:'全票 NT$30；優待票 NT$15',site:'https://www.tfam.museum/',
+  colors:[['深夜藍','#172B43'],['霧藍','#AAB4BC'],['音波銀','#D8DDE1'],['紙白','#F1F0EB']],
+  tags:['聲音地景','聲音藝術','靜謐','沉浸式裝置'],arch:'stepped',
+  ex:{t:'觀音・聽時',full:'坂本龍一｜觀音・聽時',p:'2026/10/31–2027/03/14',q:'當世界靜下來，時間便開始有了聲音。',when:'週六開放至 20:30，適合傍晚入場；週一休館',
+   sum:'回顧坂本龍一自 2000 年代以來的跨領域創作，透過聲音、影像、數位科技與大型裝置，探索音樂與視覺藝術的交界。'},
+  notes:[[8,20,'作品結合水、霧、自然環境與科技媒介'],[50,60,'捷運圓山站 1 號出口，步行約 5–8 分鐘'],[14,80,'週六開放至 20:30']],
+  go:'捷運圓山站 1 號出口 → 步行約 5–8 分鐘 → 北美館'},
+ {id:'ntmofa',en:'NTMOFA',name:'國立臺灣美術館',short:'國美館',city:'臺中',lat:24.141362,lon:120.663340,
+  addr:'臺中市西區五權西路一段2號',hours:'週二至週五 09:00–17:00；週六、週日 09:00–18:00；週一休館',ticket:'常設展及一般展覽多為免費；部分特展或活動可能收費',site:'https://www.ntmofa.gov.tw/',
+  colors:[['炭灰','#303536'],['灰石','#9A9B96'],['苔綠','#82917C'],['石灰白','#EAEAE4']],
+  tags:['聲音地景','建築光影','環境感知','自然紀錄'],arch:'layered',
+  ex:{t:'聲築幻影．臺灣',full:'聲築幻影．臺灣：以眼傾聽，以耳凝視－比爾．豐塔納',p:'2026/11/14–2027/02/14',q:'看不見的風景，也能透過耳朵抵達。',when:'週六、週日開放至 18:00；週一休館',
+   sum:'聲音藝術家比爾．豐塔納以臺灣自然環境、建築結構及城市場域為素材，捕捉肉眼難以察覺的環境震動。'},
+  notes:[[8,24,'以臺灣自然環境、建築結構及城市場域為創作素材'],[48,58,'捕捉肉眼難以察覺的環境震動'],[14,80,'常設展及一般展覽多為免費']],
+  go:'臺鐵五權站轉乘或步行；公車「美術館（五權西路）」站'},
+ {id:'moca',en:'MOCA',name:'台北當代藝術館',short:'當代館',city:'臺北',lat:25.050729,lon:121.518970,
+  addr:'臺北市大同區長安西路39號',hours:'週二至週日 10:00–18:00；週一休館',ticket:'一般票 NT$100；優待票 NT$50；團體票 NT$80',site:'https://www.moca.taipei/tw',
+  colors:[['磚紅','#A64D42'],['深木棕','#58463B'],['灰白','#E8E3D9'],['炭黑','#333536']],
+  tags:['古蹟再生','歷史檔案','城市記憶','空間敘事'],arch:'school',
+  ex:{t:'美術館之後',full:'美術館之後（After the Museum）',p:'2026/09/19–2026/12/31',q:'當空間暫別，記憶仍在持續建造。',when:'週二至週日 10:00–18:00；週一休館',
+   sum:'以美術館閉館整修為背景，重新檢視藝術機構的運作與存在價值，從建築空間、藝術勞動、制度及觀眾經驗出發。'},
+  notes:[[8,24,'以閉館整修為背景，重新檢視藝術機構的存在價值'],[48,58,'捷運中山站 6 號出口，步行約 5 分鐘'],[14,80,'2027 年起閉館整修，請以館方公告為準']],
+  go:'捷運中山站 6 號出口 → 步行約 5 分鐘 → 當代館'},
+ {id:'tnam2',en:'TNAM2',name:'臺南市美術館2館',short:'南美館2館',city:'臺南',lat:22.9918,lon:120.2044,
+  addr:'臺南市中西區忠義路二段1號',hours:'週二至週五 10:00–18:00；週六 10:00–21:00；週日 10:00–18:00；週一休館',ticket:'一般票 NT$160；共享票 NT$120；特別票 NT$80',site:'https://www.tnam.museum/',
+  colors:[['牆白','#F0F0EA'],['灰牆','#B9B9B2'],['赭橘','#D98A56'],['紅磚','#874D43']],
+  tags:['建築光影','城市記憶','歷史敘事','城市漫遊'],arch:'cube',
+  ex:{t:'迴圈．超展開',full:'迴圈．超展開：第一屆臺南藝術雙年展2026',p:'2026/10/31–2027/03/01',q:'城市不曾遺忘，只是等待另一種敘述。',when:'週六開放至 21:00，適合夜間漫遊；週一休館',
+   sum:'以臺南城市歷史、殖民記憶、地方信仰及當代生活為核心，串聯美術館與城市中的歷史建築、公共空間。'},
+  notes:[[8,22,'串聯美術館與城市中的歷史建築及公共空間'],[48,58,'雙年展橫跨多個城市據點，不只在 2 館'],[14,80,'公車孔廟站、民生綠園站']],
+  go:'臺鐵臺南車站轉乘公車；公車孔廟站、民生綠園站'},
+ {id:'kmfa',en:'KMFA',name:'高雄市立美術館',short:'高美館',city:'高雄',lat:22.656432,lon:120.286260,
+  addr:'高雄市鼓山區美術館路80號',hours:'週二至週日 09:30–17:30；週一休館',ticket:'全票 NT$90；優待票 NT$45；特展可能另收費',site:'https://www.kmfa.gov.tw/',
+  colors:[['珊瑚紅','#E85D42'],['鈷藍','#315CCB'],['檸檬黃','#F1D34B'],['紙白','#F8F7F1'],['墨黑','#252525']],
+  tags:['鮮明色彩','幾何線條','日常物件','現代設計'],arch:'wave',
+  ex:{t:'日常・解碼',full:'麥可．克雷格－馬丁：日常・解碼',p:'2026/10/03–2027/03/07',q:'日常的輪廓，藏著尚未被發現的色彩。',when:'週二至週日 09:30–17:30；週一休館',
+   sum:'觀念藝術家麥可．克雷格－馬丁以鮮明色彩、俐落輪廓與日常物件為語彙，將手機、燈泡、耳機轉化為視覺符號。'},
+  notes:[[8,24,'手機、燈泡、耳機被轉化為視覺符號'],[48,58,'鮮明色彩 × 俐落輪廓'],[14,80,'輕軌 C21 美術館站、臺鐵美術館站']],
+  go:'高雄輕軌 C21 美術館站；臺鐵美術館站'}
+];
+const M=Object.fromEntries(MUSEUMS.map(m=>[m.id,m]));
+const MOODS=[
+ ['墨綠','#2F4A3F'],['土色','#806B55'],['藍灰','#5B7186'],['磚紅','#A65F4B'],
+ ['夜藍','#172B43'],['銀灰','#D8DDE1'],['米紙','#D9CDB8'],['湖水綠','#6F8F86'],
+ ['珊瑚紅','#E85D42'],['鈷藍','#315CCB'],['檸檬黃','#F1D34B']];
+const TAGS=['靜謐','建築光影','歷史檔案','古蹟再生','聲音地景','城市記憶','幾何線條','鮮明色彩'];
+const THEMES={'古蹟再生':['moca','cyam'],'聲音地景':['tfam','ntmofa'],'城市記憶':['moca','tnam2'],'建築光影':['ntmofa','tnam2']};
+const REGIONS={'北部':['moca','tfam'],'中部':['ntmofa'],'南部':['cyam','tnam2','kmfa'],'全線南北':['moca','tfam','ntmofa','cyam','tnam2','kmfa']};
+const TRANSIT={
+ 'moca|cyam':['HSR+TRA · 2h10','高鐵＋台鐵轉乘，步行 5 分鐘抵達'],
+ 'tfam|ntmofa':['HSR · 1h15','高鐵台北→台中，轉乘市區接駁前往國美館'],
+ 'moca|tfam':['MRT · 15 min','捷運轉乘，步行抵達北美館'],
+ 'tfam|moca':['MRT · 15 min','捷運轉乘，步行抵達當代館'],
+ 'ntmofa|cyam':['HSR · 40 min','高鐵台中→嘉義，轉乘接駁'],
+ 'cyam|tnam2':['TRA · 50 min','嘉義火車站搭台鐵至台南，步行或短程接駁'],
+ 'tnam2|kmfa':['TRA/MRT · 1h','台南→高雄，轉乘捷運至美術館區'],
+ 'cyam|ntmofa':['HSR · 40 min','高鐵嘉義→台中，轉乘接駁'],
+ 'ntmofa|moca':['HSR · 1h15','高鐵台中→台北，轉乘捷運至當代館'],
+ 'moca|ntmofa':['HSR · 1h15','高鐵台北→台中，轉乘接駁']
+};
+const CITIES=[['臺北',25.04,121.56],['臺中',24.15,120.67],['嘉義',23.48,120.45],['臺南',22.99,120.21],['高雄',22.63,120.30],['花蓮',23.98,121.60],['臺東',22.76,121.14]];
+
+/* ---------- utils ---------- */
+const fmt=v=>(Math.floor(v*1e4)/1e4).toFixed(4);
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const root=document.documentElement;
+const hex2rgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const lum=h=>{const[r,g,b]=hex2rgb(h);return(r*299+g*587+b*114)/1000};
+const txt=h=>lum(h)>150?'#111':'#f2efe6';
+const sim=(a,b)=>{const x=hex2rgb(a),y=hex2rgb(b);return Math.max(0,1-Math.hypot(x[0]-y[0],x[1]-y[1],x[2]-y[2])/260)};
+const hav=(a,b,c,d)=>{const R=6371,p=Math.PI/180,x=(c-a)*p,y=(d-b)*p,z=Math.sin(x/2)**2+Math.cos(a*p)*Math.cos(c*p)*Math.sin(y/2)**2;return 2*R*Math.asin(Math.sqrt(z))};
+const st={moods:[],tags:[],bag:[],cur:'cyam',view:0};
+try{const b=JSON.parse(localStorage.getItem('vf_bag')||'[]');st.bag=b.filter(x=>M[x])}catch(e){}
+const saveBag=()=>{try{localStorage.setItem('vf_bag',JSON.stringify(st.bag))}catch(e){}};
+let tt;function toast(s){const t=$('#toast');t.textContent=s;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1800)}
+let wt,wcur='';
+function paint(a,b,c){const key=a+b+c;if(key===wcur)return;wcur=key;
+  const gs=$$('.wg'),nx=gs.find(g=>!g.classList.contains('on')),ol=gs.find(g=>g.classList.contains('on'));
+  $$('i',nx).forEach((e,i)=>e.style.setProperty('--k',[a,b,c][i]));nx.classList.add('on');ol.classList.remove('on')}
+function setWash(a,b,c){paint(a,b,c);root.style.setProperty('--wo',root.dataset.theme==='paper'?'.42':'.5');clearTimeout(wt);wt=setTimeout(()=>root.style.removeProperty('--wo'),2200)}
+function washMuseum(m){setWash(m.colors[0][1],m.colors[1][1],m.colors[2][1])}
+const WASH_DARK=['#3b5bdb','#c2417a','#14a39a'],WASH_PAPER=['#ffb199','#a9c1ff','#ffe28a'];
+function washDefault(){const w=root.dataset.theme==='paper'?WASH_PAPER:WASH_DARK;paint(...w);clearTimeout(wt);root.style.removeProperty('--wo')}
+
+/* ---------- architecture line art ---------- */
+const A={
+ timber:()=>{let s='<path d="M30 230H370M50 230V140M350 230V140M50 140L200 50L350 140M50 140H350M110 140L200 90L290 140M200 50V230"/>';
+  for(let i=0;i<8;i++)s+=`<path d="M${50+i*37.5} 230V140" opacity=".45"/>`;
+  return s+'<path d="M70 230L130 140M330 230L270 140M130 140L200 230M270 140L200 230" opacity=".6"/>'},
+ stepped:()=>{let s='';for(let i=0;i<6;i++)s+=`<rect x="${40+i*18}" y="${210-i*26}" width="${280-i*20}" height="26"/>`;
+  for(let i=0;i<14;i++)s+=`<path d="M${40+i*22} 236V60" opacity=".22"/>`;return s+'<path d="M20 236H380M40 236L320 60" opacity=".5"/>'},
+ layered:()=>{let s='';for(let i=0;i<5;i++)s+=`<path d="M${30+i*14} ${232-i*36}H${370-i*34}V${198-i*36}H${30+i*14}Z" opacity="${1-i*.13}"/>`;
+  return s+'<path d="M80 232a30 30 0 0 1 60 0M160 232a30 30 0 0 1 60 0M240 232a30 30 0 0 1 60 0"/><path d="M20 232H380"/>'},
+ school:()=>{let s='<path d="M30 130L80 70H320L370 130ZM30 130H370V235H30Z"/>';
+  for(let i=0;i<7;i++){const x=55+i*46;s+=`<path d="M${x} 235V185a14 14 0 0 1 28 0V235"/><path d="M${x} 160V150a14 14 0 0 1 28 0V160Z" opacity=".6"/>`}
+  return s+'<path d="M20 235H380"/>'},
+ cube:()=>'<path d="M200 40L320 105V215L200 280L80 215V105Z M200 40V150L80 105M200 150L320 105M200 150V280"/><path d="M140 72L260 137M170 56L290 121M110 88L230 153" opacity=".4"/><path d="M80 215L200 150L320 215" opacity=".5"/>',
+ wave:()=>{let s='';for(let i=0;i<8;i++)s+=`<path d="M20 ${130+i*17}Q110 ${100+i*17} 200 ${130+i*17}T380 ${130+i*17}" opacity="${1-i*.1}"/>`;
+  return s+'<path d="M60 130V66H340V130M60 66L200 34L340 66"/>'}
+};
+const arch=(m,col='currentColor',sw=1.2,w='100%',h='auto')=>`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="${w}"${h==='auto'?'':' height="'+h+'"'} fill="none" stroke="${col}" stroke-width="${sw}">${A[m.arch]()}</svg>`;
+
+/* ---------- nav & routing ---------- */
+const CH=[['I','閾值'],['II','感官共振'],['III','空間星象'],['IV','場域檔案'],['V','策展籤詩'],['VI','觀展行囊']];
+const nav=$('#nav');
+CH.forEach((c,i)=>{const b=document.createElement('button');b.innerHTML=`<em>${c[0]}</em>${c[1]}`;b.onclick=e=>go(i,e);nav.appendChild(b)});
+function go(n,e){
+  if(n===st.view)return;
+  const from=$('#v'+st.view),to=$('#v'+n);
+  from.classList.remove('on');from.classList.add('leaving');
+  to.scrollTop=0;
+  requestAnimationFrame(()=>{to.classList.add('on')});
+  setTimeout(()=>from.classList.remove('leaving'),600);
+  st.view=n;root.dataset.theme=to.dataset.theme;root.dataset.view=n;
+  document.body.classList.add('trans');setTimeout(()=>document.body.classList.remove('trans'),700);
+  $$('#nav button').forEach((b,i)=>b.classList.toggle('on',i===n));
+  $('#hchap').textContent='CH.0'+(n+1)+' / 06';
+  if(n!==3)washDefault();
+  /* 重活延後到轉場開始之後，避免第一幀被同步渲染卡住 */
+  setTimeout(()=>{
+    if(st.view!==n)return;
+    if(n===0)tick();
+    if(n===1)renderRes();
+    if(n===2)renderMapState();
+    if(n===3)renderDossier();
+    if(n===4)setTimeout(oracleStart,700);
+    if(n===5)renderBag(700);
+  },70);
+}
+$('#bagbtn').onclick=e=>go(5,e);
+$$('#nav button')[0].classList.add('on');
+addEventListener('keydown',e=>{if(e.target.tagName==='SELECT')return;if(e.key==='ArrowRight'&&st.view<5)go(st.view+1);if(e.key==='ArrowLeft'&&st.view>0)go(st.view-1)});
+
+/* curtain entry */
+$('#enter').onclick=e=>{const l=$('#cl'),r=$('#cr');l.classList.add('closed');r.classList.add('closed');
+  setTimeout(()=>{go(1,{clientX:innerWidth/2,clientY:innerHeight/2});l.classList.remove('closed');r.classList.remove('closed')},650)};
+
+/* ---------- pointer: coordinates + spotlight（手電筒用 transform 移動，不重繪） ---------- */
+let px=innerWidth/2,py=innerHeight/2,raf=0;
+const hlat=$('#hlat'),hlon=$('#hlon');
+function tick(){raf=0;
+  hlat.textContent=(25.4-(py/innerHeight)*3.6).toFixed(4);hlon.textContent=(119.9+(px/innerWidth)*2.2).toFixed(4);
+  if(st.view===0){const l=$('#lens0');if(l){const x=px-190,y=py-56-190;l.style.transform='translate3d('+x+'px,'+y+'px,0)';$('#lin0').style.transform='translate3d('+(-x)+'px,'+(-y)+'px,0)'}}
+  else if(st.view===3&&xray){const c=$('#c4'),r=c.getBoundingClientRect();c.style.setProperty('--sx',(px-r.left)+'px');c.style.setProperty('--sy',(py-r.top)+'px')}
+}
+addEventListener('pointermove',e=>{px=e.clientX;py=e.clientY;if(!raf)raf=requestAnimationFrame(tick)},{passive:true});
+
+/* ---------- ch1 : rings, hidden layer, waveform ---------- */
+(function(){
+  let s=`<div class="spinwrap"><svg viewBox="-500 -500 1000 1000"><defs><path id="arc" d="M -446 0 A 446 446 0 1 1 446 0 A 446 446 0 1 1 -446 0"/></defs><g stroke="#e8e6e0" fill="none">`;
+  let s2=`<defs><radialGradient id="moon" cx="40%" cy="38%"><stop offset="0" stop-color="#e6e2d6"/><stop offset=".7" stop-color="#8a867c"/><stop offset="1" stop-color="#2a2926"/></radialGradient></defs>`;
+  s+=`<circle r="478" stroke-width="1" opacity=".6"/>
+   <circle r="420" stroke-width="16" stroke-dasharray="700 110 420 190 900 318" opacity=".9"/>
+   <circle r="388" stroke-width="1" opacity=".6"/>
+   <circle r="352" stroke-width="20" stroke-dasharray="1.4 10.6" opacity=".7"/>
+   <circle r="312" stroke-width="1" opacity=".5"/>
+   <circle r="270" stroke-width="3" stroke-dasharray="1300 396" opacity=".9"/>
+   <text fill="#e8e6e0" stroke="none" font-family="Cormorant Garamond,Noto Serif TC,serif" font-size="15" letter-spacing="7" opacity=".9"><textPath href="#arc">${MUSEUMS.map(m=>`${m.en} · ${m.city} · ${fmt(m.lat)}°N ${fmt(m.lon)}°E`).join('　—　')}　—　</textPath></text></g></svg></div>`;
+  s2+=`<circle r="236" fill="#060607" stroke="#e8e6e0" stroke-width="1"/>`;
+  let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  for(let i=0;i<110;i++){const a=rnd()*6.283,r=Math.sqrt(rnd())*226;s2+=`<circle cx="${(Math.cos(a)*r).toFixed(1)}" cy="${(Math.sin(a)*r).toFixed(1)}" r="${(rnd()*1.3+.3).toFixed(2)}" fill="#e8e6e0" opacity="${(rnd()*.7+.2).toFixed(2)}"/>`}
+  s2+=`<circle cx="-30" cy="20" r="86" fill="url(#moon)"/><circle cx="-30" cy="20" r="86" fill="none" stroke="#e8e6e0" stroke-width=".8"/>
+   <path d="M-236 20H236M-30 -236V236" stroke="#e8e6e0" stroke-width=".5" opacity=".5"/>
+   <circle cx="-30" cy="20" r="130" fill="none" stroke="#e8e6e0" stroke-width=".6" stroke-dasharray="2 5"/><circle cx="-30" cy="20" r="170" fill="none" stroke="#e8e6e0" stroke-width=".6" opacity=".5"/>`;
+  const ang=[-82,-34,14,62,118,196];
+  MUSEUMS.forEach((m,i)=>{const a=ang[i]*Math.PI/180,x=Math.cos(a)*388,y=Math.sin(a)*388;
+    s2+=`<g class="rn" data-id="${m.id}"><line x1="${(Math.cos(a)*236).toFixed(1)}" y1="${(Math.sin(a)*236).toFixed(1)}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#e8e6e0" stroke-width=".8" opacity=".6"/>
+    <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="20" fill="#e9e6dc"/><text x="${x.toFixed(1)}" y="${(y+4).toFixed(1)}" text-anchor="middle">0${i+1}</text>
+    <text x="${(Math.cos(a)*(388+34)).toFixed(1)}" y="${(Math.sin(a)*(388+34)+4).toFixed(1)}" text-anchor="${Math.cos(a)>0?'start':'end'}" style="fill:#e8e6e0;font-size:12px;letter-spacing:.12em">${m.en}</text></g>`});
+  $('#rings').innerHTML=s+'<svg class="stat" viewBox="-500 -500 1000 1000">'+s2+'</svg>';
+  $$('.rn').forEach(n=>{n.onmouseenter=()=>washMuseum(M[n.dataset.id]);n.onmouseleave=washDefault;n.onclick=e=>{st.cur=n.dataset.id;go(3,e)}});
+  // hidden flashlight layer
+  let h='<svg><g stroke="#f1efe6" stroke-width=".6" fill="none" opacity=".7">';
+  for(let i=1;i<14;i++)h+=`<line x1="${i*7.2}%" y1="0" x2="${i*7.2}%" y2="100%"/>`;for(let i=1;i<9;i++)h+=`<line x1="0" y1="${i*11.1}%" x2="100%" y2="${i*11.1}%"/>`;
+  h+='<circle cx="30%" cy="42%" r="90"/><circle cx="30%" cy="42%" r="140" stroke-dasharray="3 6"/><line x1="10%" y1="70%" x2="48%" y2="20%"/><line x1="48%" y1="20%" x2="64%" y2="70%"/><rect x="62%" y="14%" width="140" height="96"/></g></svg>';
+  const pos=[[6,14],[34,30],[58,50],[12,64],[44,76],[70,22],[24,88],[76,68]],tx=[
+   '23.4768° N, 120.4408° E','1936 古蹟棟 / 1954 酒類倉庫','25.0724° N, 121.5248° E','GRID 01 — 瑞士網格 · 髮絲線 1px',
+   '24.1413° N, 120.6633° E','22.9918° N, 120.2044° E','22.6564° N, 120.2862° E','暗室藝廊 × 檔案美學'];
+  tx.forEach((t,i)=>h+=`<span style="left:${pos[i][0]}%;top:${pos[i][1]}%">${t}</span>`);
+  $('#hid0').innerHTML='<div class="lens" id="lens0"><div class="lin" id="lin0">'+h+'</div></div>';
+  // waveform
+  let w='';for(let i=0;i<64;i++){const hh=(Math.abs(Math.sin(i*.21)*Math.cos(i*.07))*.8+Math.random()*.2+.06).toFixed(2);w+=`<i style="--h:${hh};--d:${(-Math.random()*2.4).toFixed(2)}s"></i>`}
+  $('#wave').innerHTML=w;
+})();
+
+/* ---------- ch2 ---------- */
+(function(){
+  $('#discs').innerHTML=MOODS.map((m,i)=>`<button class="disc" data-i="${i}" style="--k:${m[1]}" aria-label="${m[0]}"><span class="n"></span><span class="lb">${m[0]}</span></button>`).join('');
+  $('#chips').innerHTML=TAGS.map(t=>`<button class="chip" data-t="${t}">#${t}</button>`).join('');
+  $$('.disc').forEach(d=>d.onclick=()=>{const i=+d.dataset.i,k=st.moods.indexOf(i);
+    if(k>=0)st.moods.splice(k,1);else{if(st.moods.length+st.tags.length>=3){toast('最多選 3 項，請先取消一項');return}st.moods.push(i)}syncPick()});
+  $$('.chip').forEach(c=>c.onclick=()=>{const t=c.dataset.t,k=st.tags.indexOf(t);
+    if(k>=0)st.tags.splice(k,1);else{if(st.moods.length+st.tags.length>=3){toast('最多選 3 項，請先取消一項');return}st.tags.push(t)}syncPick()});
+})();
+function syncPick(){
+  $$('.disc').forEach(d=>{const k=st.moods.indexOf(+d.dataset.i);d.classList.toggle('sel',k>=0);$('.n',d).textContent=k>=0?(k+1):''});
+  $$('.chip').forEach(c=>c.classList.toggle('sel',st.tags.includes(c.dataset.t)));
+  const cs=st.moods.map(i=>MOODS[i][1]);
+  if(cs.length){setWash(cs[0],cs[1]||cs[0],cs[2]||cs[1]||cs[0])}else washDefault();
+  renderRes();
+}
+function scoreAll(){
+  const cs=st.moods.map(i=>MOODS[i][1]);
+  return MUSEUMS.map(m=>{
+    let c=null,t=null;
+    if(cs.length)c=cs.reduce((a,h)=>a+Math.max(...m.colors.map(x=>sim(h,x[1]))),0)/cs.length;
+    if(st.tags.length)t=st.tags.filter(x=>m.tags.includes(x)).length/st.tags.length;
+    const s=(c!==null&&t!==null)?c*.55+t*.45:(c!==null?c:t);
+    return{m,s:s||0}}).sort((a,b)=>b.s-a.s);
+}
+function renderRes(){
+  const box=$('#res'),n=st.moods.length+st.tags.length;
+  if(!n){$('#pickhint').textContent='尚未選取。請先點一顆色票或一個材質標籤。';box.innerHTML='';return}
+  $('#pickhint').textContent=`已選 ${n} / 3 — 依色彩相近度與氛圍標籤，為你排序六座場域。`;
+  box.innerHTML=scoreAll().map((r,i)=>{const m=r.m,p=Math.round(r.s*100);
+    return `<div class="rrow" style="--p:${Math.max(.08,r.s)}"><div class="bar"></div><div class="pct">${p}<small>%</small></div>
+    <h4>${m.name}<small>${m.en}</small></h4><p class="meta mono">${m.city} · ${fmt(m.lat)}° N, ${fmt(m.lon)}° E<br>${m.tags.map(t=>'#'+t).join(' ')}</p>
+    <div class="sw4">${m.colors.map(c=>`<i style="background:${c[1]}"></i>`).join('')}</div>
+    <div class="btns" style="margin-top:12px"><button class="mini" data-o="${m.id}">開啟場域檔案</button><button class="mini" data-b="${m.id}">${st.bag.includes(m.id)?'已在行囊':'收入行囊'}</button><button class="mini" data-w="${m.id}">在星象圖上點亮</button></div></div>`}).join('');
+  $$('[data-o]',box).forEach(b=>b.onclick=e=>{st.cur=b.dataset.o;go(3,e)});
+  $$('[data-b]',box).forEach(b=>b.onclick=()=>{addBag(b.dataset.b);renderRes()});
+  $$('[data-w]',box).forEach(b=>b.onclick=e=>{mapSel=[b.dataset.w];go(2,e)});
+}
+function addBag(id){if(st.bag.includes(id)){toast('已在行囊中');return}st.bag.push(id);saveBag();updBag();toast('已收入行囊 — '+M[id].short)}
+function updBag(){$('#bagn').textContent=st.bag.length}
+
+/* ---------- ch3 map ---------- */
+const W=520,H=860,P=(lon,lat)=>[20+(lon-119.9)*219,10+(25.4-lat)*236];
+const COAST=[[121.54,25.30],[121.74,25.13],[121.87,24.60],[121.62,23.98],[121.38,23.10],[121.15,22.75],[120.89,22.35],[120.85,21.92],[120.70,22.00],[120.60,22.37],[120.28,22.60],[120.15,23.00],[120.14,23.38],[120.18,23.75],[120.30,24.05],[120.55,24.30],[120.70,24.60],[120.92,24.85],[121.10,25.05],[121.42,25.18]];
+function smooth(pts){const n=pts.length;let d=`M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+  for(let i=0;i<n;i++){const p0=pts[(i-1+n)%n],p1=pts[i],p2=pts[(i+1)%n],p3=pts[(i+2)%n];
+    const c1=[p1[0]+(p2[0]-p0[0])/6,p1[1]+(p2[1]-p0[1])/6],c2=[p2[0]-(p3[0]-p1[0])/6,p2[1]-(p3[1]-p1[1])/6];
+    d+=`C${c1[0].toFixed(1)} ${c1[1].toFixed(1)} ${c2[0].toFixed(1)} ${c2[1].toFixed(1)} ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`}return d+'Z'}
+const OFF={tfam:[16,-8],moca:[-12,10]},LAB={cyam:[14,4,'start'],tfam:[24,-12,'start'],ntmofa:[14,4,'start'],moca:[-22,16,'end'],tnam2:[14,4,'start'],kmfa:[14,4,'start']};
+const pos=m=>{const p=P(m.lon,m.lat),o=OFF[m.id]||[0,0];return[p[0]+o[0],p[1]+o[1]]};
+let mapSel=[],radarPt=null;
+(function buildMap(){
+  const cd=smooth(COAST.map(p=>P(...p)));
+  let g='';for(let la=22;la<=25;la+=.5){const y=P(0,la)[1];g+=`<path class="gl" d="M0 ${y}H${W}"/><text class="mono" x="2" y="${y-3}" style="font-size:8px;fill:var(--fg);opacity:.5">${la.toFixed(1)}°N</text>`}
+  for(let lo=120;lo<=122;lo+=.5){const x=P(lo,0)[0];g+=`<path class="gl" d="M${x} 0V${H}"/><text class="mono" x="${x+3}" y="10" style="font-size:8px;fill:var(--fg);opacity:.5">${lo.toFixed(1)}°E</text>`}
+  const cx=260,cy=430;
+  const ctr=[.9,.8,.7,.6].map(s=>`<path class="ctr" d="${cd}" transform="translate(${cx} ${cy}) scale(${s}) translate(${-cx} ${-cy})"/>`).join('');
+  const nodes=MUSEUMS.map(m=>{const [x,y]=pos(m),l=LAB[m.id];
+    return `<g class="node" data-id="${m.id}"><circle class="halo" cx="${x}" cy="${y}" r="4"/><circle class="core" cx="${x}" cy="${y}" r="3.6"/><circle cx="${x}" cy="${y}" r="16" fill="transparent"/>
+    <text x="${x+l[0]}" y="${y+l[1]}" text-anchor="${l[2]}">${m.en}</text><text class="zh" x="${x+l[0]}" y="${y+l[1]+13}" text-anchor="${l[2]}">${m.short}</text></g>`}).join('');
+  $('#mapbox').insertAdjacentHTML('afterbegin',`<svg id="msvg" viewBox="0 0 ${W} ${H}">${g}${ctr}<path class="coast" d="${cd}"/><g id="radar"></g><g id="routes"></g>${nodes}</svg>`);
+  $('#themes').innerHTML=Object.keys(THEMES).map(t=>`<button class="chip" data-th="${t}">#${t}</button>`).join('');
+  $('#regions').innerHTML=Object.keys(REGIONS).map(t=>`<button class="chip" data-rg="${t}">${t}</button>`).join('');
+  $('#city').innerHTML='<option value="">— 選擇所在縣市 —</option>'+CITIES.map((c,i)=>`<option value="${i}">${c[0]}</option>`).join('');
+  $$('[data-th]').forEach(b=>b.onclick=()=>{$$('#themes .chip,#regions .chip').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');radarPt=null;mapSel=THEMES[b.dataset.th];renderMapState()});
+  $$('[data-rg]').forEach(b=>b.onclick=()=>{$$('#themes .chip,#regions .chip').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');radarPt=null;mapSel=REGIONS[b.dataset.rg];renderMapState()});
+  $('#city').onchange=e=>{if(e.target.value==='')return;const c=CITIES[+e.target.value];startRadar(c[1],c[2],c[0])};
+  $('#geo').onclick=()=>{if(!navigator.geolocation){toast('此瀏覽器不支援定位');return}
+    navigator.geolocation.getCurrentPosition(p=>startRadar(p.coords.latitude,p.coords.longitude,'你的位置'),()=>toast('無法取得定位，請改用縣市選單'))};
+  $$('.node').forEach(n=>{const m=M[n.dataset.id];
+    n.onmouseenter=()=>{washMuseum(m);const tip=$('#tip');tip.innerHTML=`${arch(m,'currentColor',1)}<b>${m.name}</b><span class="mono dim">${fmt(m.lat)}° N, ${fmt(m.lon)}° E</span>`;tip.classList.add('on');
+      const [x,y]=pos(m),b=$('#msvg').getBoundingClientRect(),bb=$('#mapbox').getBoundingClientRect();
+      tip.style.left=Math.min(bb.width-230,Math.max(6,(b.left-bb.left)+x*b.width/W+20))+'px';tip.style.top=Math.max(6,(b.top-bb.top)+y*b.height/H-60)+'px'};
+    n.onmouseleave=()=>{$('#tip').classList.remove('on');washDefault()};
+    n.onclick=e=>{st.cur=m.id;go(3,e)}});
+})();
+function renderMapState(){
+  const routes=$('#routes'),legs=$('#legs');routes.innerHTML='';
+  $$('.node').forEach(n=>{n.classList.remove('lit','dark')});
+  if(radarPt){return}
+  if(!mapSel.length){legs.innerHTML='<p class="mono dim" style="padding:12px 0">選擇路徑後，節點之間的交通方式與移動時間會顯示於此。</p>';return}
+  const list=mapSel.map(id=>M[id]).sort((a,b)=>b.lat-a.lat+(a.id==='tfam'?.001:0));
+  $$('.node').forEach(n=>n.classList.add(list.some(m=>m.id===n.dataset.id)?'lit':'dark'));
+  let s='',L='';
+  for(let i=0;i<list.length-1;i++){const a=list[i],b=list[i+1],[x1,y1]=pos(a),[x2,y2]=pos(b),mx=(x1+x2)/2-34,my=(y1+y2)/2;
+    const t=TRANSIT[a.id+'|'+b.id]||['大眾運輸轉乘','高鐵／台鐵／捷運轉乘，請以實際班次為準'];
+    s+=`<path class="rt" pathLength="1" style="transition-delay:${i*.9}s" d="M${x1} ${y1}Q${mx} ${my} ${x2} ${y2}"/><text class="rtl" x="${mx-6}" y="${my}" text-anchor="end" style="transition-delay:${i*.9+1}s">${t[0]}</text>`;
+    L+=`<div class="leg"><span class="mono">0${i+1}→0${i+2}</span><div><b>${a.short} → ${b.short}</b><br><span class="mono">${t[1]}</span></div></div>`}
+  routes.innerHTML=s;
+  legs.innerHTML=list.length>1?L:`<div class="leg"><span class="mono">01</span><div><b>${list[0].name}</b><br><span class="mono">${list[0].go}</span></div></div>`;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>$$('.rt,.rtl',routes).forEach(e=>e.classList.add('go'))));
+}
+function startRadar(lat,lon,label){
+  radarPt=[lat,lon];mapSel=[];$$('#themes .chip,#regions .chip').forEach(x=>x.classList.remove('sel'));
+  const [x,y]=P(Math.min(122.1,Math.max(119.9,lon)),Math.min(25.4,Math.max(21.8,lat)));
+  const ord=MUSEUMS.map(m=>({m,d:hav(lat,lon,m.lat,m.lon)})).sort((a,b)=>a.d-b.d);
+  let r=`<circle cx="${x}" cy="${y}" r="3" fill="var(--red)"/>`;
+  for(let i=0;i<3;i++)r+=`<circle class="ripple" cx="${x}" cy="${y}" r="4"><animate attributeName="r" from="4" to="260" dur="3.6s" begin="${i*1.2}s" repeatCount="indefinite"/><animate attributeName="opacity" from=".8" to="0" dur="3.6s" begin="${i*1.2}s" repeatCount="indefinite"/></circle>`;
+  $('#radar').innerHTML=r;
+  const routes=$('#routes');
+  $$('.node').forEach(n=>n.classList.add('dark'));
+  routes.innerHTML=ord.slice(0,3).map((o,i)=>{const [x2,y2]=pos(o.m);return `<path class="rt" pathLength="1" style="transition-delay:${.5+i*.5}s;opacity:${1-i*.28}" d="M${x} ${y}L${x2} ${y2}"/>`}).join('');
+  ord.forEach((o,i)=>{setTimeout(()=>{const n=$(`.node[data-id="${o.m.id}"]`);n.classList.remove('dark');n.classList.add('lit')},400+i*450)});
+  requestAnimationFrame(()=>requestAnimationFrame(()=>$$('.rt',routes).forEach(e=>e.classList.add('go'))));
+  $('#legs').innerHTML=`<p class="mono dim" style="padding:10px 0">起點：${label}　${lat.toFixed(3)}° N, ${lon.toFixed(3)}° E</p>`+ord.map((o,i)=>`<div class="leg"><span class="mono">0${i+1}</span><div><b>${o.m.name}</b><br><span class="mono">直線距離約 ${Math.round(o.d)} km · ${i===0?'最近的靈感之旅 ↗':o.m.go}</span></div></div>`).join('');
+}
+
+/* ---------- ch4 dossier ---------- */
+let xray=false;
+function renderDossier(){
+  $('#idx').innerHTML=MUSEUMS.map((m,i)=>`<button data-id="${m.id}" class="${m.id===st.cur?'on':''}"><span class="mono">0${i+1} · ${m.city}</span><strong>${m.short}</strong><span class="sc">${m.en}</span></button>`).join('');
+  $$('#idx button').forEach(b=>b.onclick=()=>{st.cur=b.dataset.id;renderDossier()});
+  const m=M[st.cur],[c1,c2,c3,c4]=m.colors.map(c=>c[1]);
+  washMuseum(m);
+  const dark=lum(c1)<110;
+  $('#back').innerHTML=arch(m,'currentColor',1.1);
+  $('#poster').style.cssText=`--p1:${c1};--p3:${c2};color:${txt(c1)}`;
+  $('#poster').innerHTML=`<div class="dot">0${MUSEUMS.indexOf(m)+1}</div><h3>${m.ex.t}</h3><div class="q">${m.ex.q}<br><span class="mono" style="opacity:.8">${m.ex.p}</span></div>`;
+  $('#bgname').textContent=m.short;
+  $('#hidnote').innerHTML=m.notes.map(n=>`<span style="left:${n[0]}%;top:${n[1]}%">${n[2]}</span>`).join('');
+  $('#info').innerHTML=`<div><p class="mono dim">${m.en} · ${m.city}</p><h3>${m.name}</h3></div>
+   <p class="coord mono">${fmt(m.lat)}° N, ${fmt(m.lon)}° E<br>${m.addr}<br>${m.go}</p><p class="mono dim" style="line-height:1.8">開放：${m.hours}<br>票價：${m.ticket}<br><a href="${m.site}" target="_blank" rel="noopener" style="color:inherit">官方網站 ↗</a></p>
+   <div class="swatches">${m.colors.map(c=>`<button class="swatch" data-h="${c[1]}" style="--k:${c[1]};--t:${txt(c[1])}"><b>${c[0]}</b><span class="mono">${c[1]}</span></button>`).join('')}</div>
+   <div class="acts"><button class="btn ${xray?'on':''}" id="xr">空間透視 · X-RAY</button><button class="btn" id="bg">收入行囊</button><button class="btn red" id="mc">生成靈感材質卡</button></div>
+   <p class="mono dim" style="font-size:10px">資料快照 2026-11-22。展覽名稱、展期、票價與開放時間請以各館官網為準；引言為編輯撰寫，非策展人原話。</p>`;
+  $('#c4').classList.toggle('xray',xray);
+  $$('.swatch').forEach(s=>s.onclick=()=>{const h=s.dataset.h;(navigator.clipboard?navigator.clipboard.writeText(h):Promise.reject()).then(()=>toast('已複製 '+h),()=>{const t=document.createElement('textarea');t.value=h;document.body.appendChild(t);t.select();try{document.execCommand('copy');toast('已複製 '+h)}catch(e){toast(h)}t.remove()})});
+  $('#xr').onclick=()=>{xray=!xray;$('#c4').classList.toggle('xray',xray);$('#xr').classList.toggle('on',xray);toast(xray?'空間透視：移動滑鼠，用手電筒照出隱藏註記':'已回到明室')};
+  $('#bg').onclick=()=>addBag(m.id);
+  $('#mc').onclick=()=>makeMaterial(m);
+  $('#cards4').innerHTML=`<div class="film"><p class="mono dim">EXHIBITION · 展覽</p><p style="font-weight:900;font-size:17px;letter-spacing:.08em;margin:6px 0;line-height:1.5">《${m.ex.full}》</p><p class="mono">${m.ex.p}</p><p style="margin-top:8px">${m.ex.sum}</p></div>
+   <div class="film"><p class="mono dim">EDITORIAL QUOTE · 編輯引言（非策展人原話）</p><p style="margin-top:6px;font-weight:600">「${m.ex.q}」</p><p class="mono" style="margin-top:8px">推薦觀展：${m.ex.when}</p></div>`;
+}
+async function fonts(){try{await Promise.all(['900 60px "Noto Serif TC"','400 20px "IBM Plex Mono"','500 20px "Cormorant Garamond"'].map(f=>document.fonts.load(f,'觀景窗A')))}catch(e){}}
+function img(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src})}
+function grainOn(ctx,w,h,a=.12){const n=document.createElement('canvas');n.width=n.height=180;const c=n.getContext('2d'),d=c.createImageData(180,180);
+  for(let i=0;i<d.data.length;i+=4){const v=Math.random()*255;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=255}c.putImageData(d,0,0);
+  ctx.save();ctx.globalAlpha=a;ctx.globalCompositeOperation='overlay';ctx.fillStyle=ctx.createPattern(n,'repeat');ctx.fillRect(0,0,w,h);ctx.restore()}
+function dl(cv,name){cv.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);toast('已下載 '+name)})}
+async function makeMaterial(m){
+  toast('生成中…');await fonts();
+  const cv=document.createElement('canvas');cv.width=1080;cv.height=1350;const x=cv.getContext('2d');
+  x.fillStyle='#eeebe3';x.fillRect(0,0,1080,1350);
+  const cols=m.colors.map(c=>c[1]);
+  // top: cropped line art on colour field
+  x.fillStyle=cols[0];x.fillRect(60,60,960,640);
+  let svg=null;try{svg=await img('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(arch(m,txt(cols[0]),1.2,1200,900)))}catch(e){}
+  x.save();x.beginPath();x.rect(60,60,960,640);x.clip();if(svg)x.drawImage(svg,-100,-90,1500,1125);x.restore();
+  x.fillStyle=cols[1];x.beginPath();x.arc(830,540,150,0,7);x.fill();
+  x.fillStyle='rgba(0,0,0,.18)';for(let i=0;i<60;i++)for(let j=0;j<40;j++){x.beginPath();x.arc(70+i*16,70+j*16,2.2*(i/60),0,7);x.fill()}
+  x.strokeStyle='#111';x.lineWidth=1.5;x.strokeRect(60,60,960,640);
+  // swatches
+  const sw=960/cols.length;cols.forEach((c,i)=>{x.fillStyle=c;x.fillRect(60+i*sw,720,sw,170);x.fillStyle=txt(c);x.font='500 20px "IBM Plex Mono",monospace';x.fillText(c,72+i*sw,870);x.font='600 22px "Noto Serif TC",serif';x.fillText(m.colors[i][0],72+i*sw,760)});
+  x.strokeStyle='#111';x.strokeRect(60,720,960,170);
+  x.fillStyle='#111';x.font='900 76px "Noto Serif TC",serif';x.fillText(m.name,60,1000);
+  x.font='500 30px "Cormorant Garamond","Noto Serif TC",serif';x.fillText(m.en+'  ·  '+m.city,64,1046);
+  x.font='400 24px "IBM Plex Mono",monospace';x.fillText(fmt(m.lat)+'° N, '+fmt(m.lon)+'° E',64,1096);
+  x.font='600 32px "Noto Serif TC",serif';x.fillText('「'+m.ex.q+'」（編輯引言）',64,1170);
+  x.fillStyle='#111';x.fillRect(60,1220,960,1.5);
+  x.font='400 20px "IBM Plex Mono",monospace';x.fillText('觀景窗 VIEWFINDER — 靈感材質卡 / MATERIAL SWATCH',60,1264);x.fillText(m.addr,60,1296);
+  grainOn(x,1080,1350,.16);dl(cv,'viewfinder-material-'+m.id+'.png');
+}
+
+/* ---------- ch5 oracle ---------- */
+const oc=$('#oc'),ox=oc.getContext('2d');let orun=false,oidx=0,oseed=0,hold=0,holding=false,locked=false,ocur=null;
+const noise=(()=>{const n=document.createElement('canvas');n.width=n.height=200;const c=n.getContext('2d'),d=c.createImageData(200,200);for(let i=0;i<d.data.length;i+=4){const v=Math.random()*255;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=40}c.putImageData(d,0,0);return n})();
+function oracleStart(){if(orun)return;orun=true;requestAnimationFrame(oloop)}
+function oloop(t){
+  if(st.view!==4){orun=false;return}
+  if(!locked){oidx=Math.floor(t/1400)%6}
+  const m=MUSEUMS[oidx],cs=m.colors.map(c=>c[1]),w=520,h=720,s=t/1000;
+  ox.fillStyle='#1b2232';ox.fillRect(0,0,w,h);
+  // halftone disc
+  const cx=260+Math.sin(s*.5)*40,cy=250+Math.cos(s*.4)*30,R=150;
+  ox.fillStyle=cs[0];ox.beginPath();ox.arc(cx,cy,R,0,7);ox.fill();
+  for(let i=0;i<34;i++)for(let j=0;j<34;j++){const px_=60+i*12.2,py_=60+j*12.2,d=Math.hypot(px_-cx,py_-cy);if(d<R+60&&d>R-4){ox.fillStyle=cs[1];ox.beginPath();ox.arc(px_,py_,Math.max(0,(1-(d-R+4)/64)*4),0,7);ox.fill()}}
+  // rings
+  ox.strokeStyle='#e8e6e0';ox.lineWidth=1;
+  for(let i=0;i<5;i++){ox.globalAlpha=.7-i*.1;ox.beginPath();ox.arc(260,420,70+i*34,s*.3+i,s*.3+i+Math.PI*(1.3-i*.12));ox.stroke()}
+  ox.globalAlpha=.5;ox.lineWidth=.8;for(let i=0;i<7;i++){const x_=40+i*73;ox.beginPath();ox.moveTo(x_,30);ox.lineTo(x_,690);ox.stroke()}
+  ox.globalAlpha=1;
+  ox.fillStyle=cs[2];ox.fillRect(0,520+Math.sin(s)*8,w,6);ox.fillStyle=cs[3];ox.beginPath();ox.arc(380+Math.sin(s*.7)*50,420,26,0,7);ox.fill();
+  ox.fillStyle='#e9e6dc';ox.beginPath();ox.arc(90,610,28,0,7);ox.fill();ox.fillStyle='#111';ox.font='italic 600 28px "Cormorant Garamond",serif';ox.textAlign='center';ox.fillText(String(1+Math.floor(s*3)%12).padStart(2,'0'),90,620);
+  ox.textAlign='left';ox.fillStyle='#e8e6e0';ox.font='400 12px "IBM Plex Mono",monospace';ox.fillText(fmt(m.lat)+'° N  '+fmt(m.lon)+'° E',140,616);ox.fillText('NO. '+String(Math.floor(s*10)%999).padStart(3,'0')+' / '+m.en,140,636);
+  ox.drawImage(noise,Math.sin(s*9)*30,Math.cos(s*7)*30);ox.drawImage(noise,-100+Math.sin(s*5)*30,-100);
+  if(holding&&!locked){hold+=1/66;$('#prog').style.setProperty('--pg',Math.min(1,hold));if(hold>=1){holding=false;reveal()}}
+  requestAnimationFrame(oloop);
+}
+function reveal(){
+  locked=true;const m=ocur=MUSEUMS[oidx];
+  $('#flash').classList.remove('go');void $('#flash').offsetWidth;$('#flash').classList.add('go');
+  const r=$('#rev');r.style.setProperty('--rbg',m.colors[0][1]);r.style.color=txt(m.colors[0][1]);
+  setTimeout(()=>{r.innerHTML=`<p class="mono">${m.en} · ${m.city} · ${fmt(m.lat)}° N</p><h3>${m.name}</h3><p class="ex">《${m.ex.full}》<br><span class="mono" style="font-size:11px;letter-spacing:.06em">${m.ex.p}</span></p>
+   <p class="when mono">推薦觀展時間<br>${m.ex.when}</p><p class="qq">「${m.ex.q}」</p>
+   <div class="acts"><button class="btn" id="rb">收入行囊</button><button class="btn" id="ro">開啟檔案</button><button class="btn" id="ra">再抽一次</button></div>`;
+    r.classList.add('on');washMuseum(m);$('#hold').style.display='none';$('#oinfo').textContent='NO. '+String(Math.floor(Math.random()*900)+100)+' / '+m.en;
+    $('#rb').onclick=()=>addBag(m.id);$('#ro').onclick=e=>{st.cur=m.id;go(3,e)};$('#ra').onclick=resetOracle},380);
+}
+function resetOracle(){locked=false;hold=0;$('#prog').style.setProperty('--pg',0);$('#rev').classList.remove('on');$('#hold').style.display='';washDefault()}
+const cw=$('#cw');
+cw.addEventListener('pointerdown',e=>{if(locked||e.target.closest('.btn'))return;holding=true;hold=0});
+['pointerup','pointerleave','pointercancel'].forEach(ev=>cw.addEventListener(ev,()=>{if(!locked){holding=false;hold=0;$('#prog').style.setProperty('--pg',0)}}));
+$('#draw').onclick=()=>{if(locked){resetOracle();setTimeout(reveal,300)}else reveal()};
+
+/* ---------- ch6 bag & ticket ---------- */
+function renderBag(delay=0){
+  const l=$('#baglist');
+  l.innerHTML=st.bag.length?st.bag.map((id,i)=>{const m=M[id];return `<div class="bagrow"><span class="mono">0${i+1}</span><div><h4>${m.name}</h4><p class="mono dim">《${m.ex.full}》 · ${m.city}</p><div class="sw4">${m.colors.map(c=>`<i style="background:${c[1]}"></i>`).join('')}</div></div><div class="btns"><button class="mini" data-o="${id}">檔案</button><button class="mini" data-x="${id}">移除</button></div></div>`}).join(''):'<p class="empty">行囊還是空的。<br>從「感官共振」、「場域檔案」或「策展籤詩」把你有感覺的展覽收進來，門票就會即時生成。</p>';
+  $$('[data-o]',l).forEach(b=>b.onclick=e=>{st.cur=b.dataset.o;go(3,e)});
+  $$('[data-x]',l).forEach(b=>b.onclick=()=>{st.bag=st.bag.filter(x=>x!==b.dataset.x);saveBag();updBag();renderBag()});
+  setTimeout(()=>drawTicket($('#tc'),.5),delay);
+}
+$('#clr').onclick=()=>{st.bag=[];saveBag();updBag();renderBag()};
+$('#dl').onclick=async()=>{if(!st.bag.length){toast('行囊是空的，先收入一場展覽');return}
+  toast('生成高解析度門票…');const o=document.createElement('canvas');o.width=1080;o.height=1620;await drawTicket(o,1);dl(o,'viewfinder-ticket.png')};
+async function drawTicket(cv,scale=1){
+  await fonts();
+  const x=cv.getContext('2d'),W_=1080,H_=1620;x.setTransform(scale,0,0,scale,0,0);x.clearRect(0,0,W_,H_);
+  x.fillStyle='#eeebe3';x.fillRect(0,0,W_,H_);
+  const items=st.bag.map(id=>M[id]),f=items[0];
+  if(f){const g=x.createRadialGradient(240,300,10,240,300,800);g.addColorStop(0,f.colors[0][1]+'cc');g.addColorStop(1,'#eeebe300');x.fillStyle=g;x.fillRect(0,0,W_,H_)}
+  x.fillStyle='#111';x.fillRect(60,60,960,2);x.fillRect(60,1560,960,2);
+  x.font='500 26px "Cormorant Garamond",serif';x.fillText('A D M I T   O N E   —   D I G I T A L   T I C K E T',60,110);
+  x.font='900 150px "Noto Serif TC",serif';x.fillText('觀景窗',54,290);
+  x.font='400 22px "IBM Plex Mono",monospace';x.fillText('台灣當代美術館沉浸式探索與靈感採集平台',62,340);
+  const d=new Date(),no='VF-'+(d.getFullYear()%100)+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'-'+String(items.length*137+11).padStart(4,'0');
+  x.fillText('NO. '+no+'   '+d.getFullYear()+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+String(d.getDate()).padStart(2,'0'),62,380);
+  // mood colours
+  x.font='500 20px "IBM Plex Mono",monospace';x.fillText('MOOD / 今日心情色票',62,450);
+  const moods=st.moods.map(i=>MOODS[i]);
+  (moods.length?moods:[['—','#b9b8b0']]).forEach((c,i)=>{x.fillStyle=c[1];x.beginPath();x.arc(100+i*110,520,38,0,7);x.fill();x.fillStyle='#111';x.font='400 16px "IBM Plex Mono",monospace';x.fillText(c[0],80+i*110,590)});
+  if(st.tags.length){x.fillStyle='#111';x.font='400 20px "IBM Plex Mono",monospace';x.fillText(st.tags.map(t=>'#'+t).join('  '),62,640)}
+  x.fillStyle='#111';x.fillRect(60,670,960,1.5);
+  if(!items.length){x.font='600 34px "Noto Serif TC",serif';x.fillText('行囊尚空',62,760);x.font='400 22px "IBM Plex Mono",monospace';x.fillText('— 收入展覽後，門票將在此生成 —',62,810)}
+  items.slice(0,3).forEach((m,i)=>{const y=700+i*270;
+    x.fillStyle=m.colors[0][1];x.fillRect(60,y,18,230);
+    m.colors.forEach((c,k)=>{x.fillStyle=c[1];x.fillRect(100+k*56,y+8,50,50)});
+    x.fillStyle='#111';x.font='900 46px "Noto Serif TC",serif';x.fillText(m.name,100,y+110);
+    x.font='600 26px "Noto Serif TC",serif';x.fillText('《'+m.ex.full+'》',100,y+156);
+    x.font='400 19px "IBM Plex Mono",monospace';x.fillText(fmt(m.lat)+'° N, '+fmt(m.lon)+'° E',100,y+190);x.fillText(m.go,100,y+220)});
+  if(items.length>3){x.font='400 20px "IBM Plex Mono",monospace';x.fillStyle='#111';x.fillText('+ '+(items.length-3)+' 場展覽收在行囊',62,1530)}
+  if(f){x.fillStyle='#111';x.font='600 30px "Noto Serif TC",serif';x.fillText('「'+f.ex.q+'」',62,1500)}
+  x.fillStyle='#161618';[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17].forEach(i=>{});
+  x.fillStyle='#d9d5c8';for(let i=0;i<27;i++){x.beginPath();x.arc(80+i*36.5,22,8,0,7);x.fill();x.beginPath();x.arc(80+i*36.5,1598,8,0,7);x.fill()}
+  grainOn(x,W_,H_,.18);
+}
+
+/* ---------- init ---------- */
+updBag();washDefault();tick();
+</script>
+</body>
+</html>
